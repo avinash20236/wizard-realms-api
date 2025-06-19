@@ -1,47 +1,27 @@
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
-  username: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  gold: {
-    type: Number,
-    default: 1000,  // Starting gold for a player
-  },
-  mana: {
-    type: Number,
-    default: 500,   // Starting mana for spells
-  },
-  base: {
-    buildings: [{ type: String }],
-    defenses: [{ type: String }],
-  },
-  army: {
-    wizards: {
-      type: Number,
-      default: 0,
-    },
-    golems: {
-      type: Number,
-      default: 0,
-    },
-  },
-}, { timestamps: true });
+  username: { type: String, required: true, unique: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  gold: { type: Number, default: 1000 },
+  mana: { type: Number, default: 500 },
+  base: { buildings: Array, defenses: Array },
+  army: { wizards: Number, golems: Number },
+});
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password);
+};
 
 const User = mongoose.model('User', userSchema);
-
 export default User;

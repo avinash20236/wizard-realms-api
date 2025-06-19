@@ -1,34 +1,39 @@
-import express from 'express';
-import User from '../models/User.js';
-import bcrypt from 'bcryptjs';
+// routes/userRoutes.js
+import express from "express";
+import User from "../models/User.js";
 
 const router = express.Router();
 
-// Paste your /register POST route here
-router.post('/register', async (req, res) => {
-  try {
-    const { username, email, password } = req.body;
+// POST /api/users/register
+router.post("/register", async (req, res) => {
+  const { username, email, password } = req.body;
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+  const user = new User({
+    username,
+    email,
+    password,
+    gold: 1000,
+    mana: 500,
+    base: { buildings: [], defenses: [] },
+    army: { wizards: 0, golems: 0 },
+  });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  await user.save();
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-    });
+  res.json({ message: "🧙 User created!", user });
+});
 
-    await newUser.save();
+// ✅ Add this route for login
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
 
-    res.status(201).json({ message: 'User registered!', user: newUser });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+  const user = await User.findOne({ email });
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({ message: "❌ Invalid credentials" });
   }
+
+  res.json({ message: "✅ Login successful", user });
 });
 
 export default router;
